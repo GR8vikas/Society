@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #1a2b48;
+  --color-navy-light: #2a3d5f;
+  --color-amber: #f59e0b;
+  --color-theme-bg: #f3f4f6;
+  --color-theme-white: #ffffff;
+  --color-theme-slate: #4b5563;
+  --color-theme-border: #e5e7eb;
+}
+
+@layer base {
+  body {
+    @apply bg-theme-bg text-navy;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Unity Society Pro",
+  "description": "A comprehensive Society Management System for residents and administrators to manage flats, maintenance, complaints, and visitor logs.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": []
+}

@@ -1,0 +1,116 @@
+{
+  "entities": {
+    "Resident": {
+      "title": "Resident",
+      "description": "Details of a person living in the society",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "flatId": { "type": "string"},
+        "contact": { "type": "string" },
+        "status": { "type": "string", "enum": ["owner", "tenant"] },
+        "moveInDate": { "type": "string", "format": "date-time" },
+        "emergencyContact": { "type": "string" }
+      },
+      "required": ["name", "flatId", "status"]
+    },
+    "Flat": {
+      "title": "Flat",
+      "description": "Information about a housing unit",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "wing": { "type": "string" },
+        "flatNo": { "type": "string" },
+        "occupancy": { "type": "string", "enum": ["occupied", "vacant"] },
+        "type": { "type": "string" },
+        "size": { "type": "string" }
+      },
+      "required": ["wing", "flatNo", "occupancy"]
+    },
+    "Maintenance": {
+      "title": "Maintenance Bill",
+      "description": "Financial records for monthly maintenance",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "flatId": { "type": "string" },
+        "amount": { "type": "number" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["paid", "pending", "overdue"] },
+        "paymentDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["flatId", "amount", "dueDate", "status"]
+    },
+    "Notice": {
+      "title": "Notice",
+      "description": "Society announcements",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "category": { "type": "string", "enum": ["general", "urgent", "event"] },
+        "date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "content", "category", "date"]
+    },
+    "Complaint": {
+      "title": "Complaint",
+      "description": "Resident raised requests or issues",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "residentId": { "type": "string" },
+        "flatId": { "type": "string" },
+        "type": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["Open", "In Progress", "Resolved"] },
+        "assignedTo": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["residentId", "flatId", "type", "description", "status", "createdAt"]
+    },
+    "Visitor": {
+      "title": "Visitor",
+      "description": "Visitor entry/exit logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "flatId": { "type": "string" },
+        "purpose": { "type": "string" },
+        "entryTime": { "type": "string", "format": "date-time" },
+        "exitTime": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "flatId", "purpose", "entryTime"]
+    }
+  },
+  "firestore": {
+    "/residents/{residentId}": {
+      "schema": "Resident",
+      "description": "Collection of all residents"
+    },
+    "/flats/{flatId}": {
+      "schema": "Flat",
+      "description": "Collection of all housing units"
+    },
+    "/maintenance/{billId}": {
+      "schema": "Maintenance",
+      "description": "Collection of maintenance bills"
+    },
+    "/notices/{noticeId}": {
+      "schema": "Notice",
+      "description": "Collection of society notices"
+    },
+    "/complaints/{complaintId}": {
+      "schema": "Complaint",
+      "description": "Collection of resident complaints"
+    },
+    "/visitors/{visitorId}": {
+      "schema": "Visitor",
+      "description": "Collection of visitor logs"
+    }
+  }
+}
