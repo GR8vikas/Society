@@ -52,7 +52,8 @@ export interface Visitor {
   name: string;
   flatId: string;
   purpose: string;
-  entryTime: string;
+  entryTime?: string;
   exitTime?: string;
   photo?: string;
+  status?: 'pending' | 'approved' | 'rejected' | 'left';
 }

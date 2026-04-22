@@ -45,9 +45,10 @@ export default function Dashboard() {
     occupancy: 0,
     pendingDuesAmount: 0,
     openComplaints: 0,
-    activeVisitors: 0
+    activeVisitors: 0,
+    pendingVisitors: 0
   });
-  
+
   const [recentComplaints, setRecentComplaints] = useState<Complaint[]>([]);
   const [recentNotices, setRecentNotices] = useState<Notice[]>([]);
   const [flatsMap, setFlatsMap] = useState<Record<string, string>>({});
@@ -95,7 +96,13 @@ export default function Dashboard() {
         const activeVisitorsCount = visitorsSnap.docs.filter(d => {
              const v = d.data() as Visitor;
              if (auth.role === 'resident' && v.flatId !== auth.flatId) return false;
-             return !v.exitTime;
+             return !v.exitTime && (!v.status || v.status === 'approved' || v.status === 'pending');
+        }).length;
+
+        const pendingVisitorsCount = visitorsSnap.docs.filter(d => {
+            const v = d.data() as Visitor;
+            if (auth.role === 'resident' && v.flatId !== auth.flatId) return false;
+            return v.status === 'pending';
         }).length;
 
         setStats({
@@ -103,7 +110,8 @@ export default function Dashboard() {
           occupancy: totalFlats > 0 ? Math.round((occupiedFlats / totalFlats) * 100) : 0,
           pendingDuesAmount: pendingAmount,
           openComplaints: openComplaintsCount,
-          activeVisitors: activeVisitorsCount
+          activeVisitors: activeVisitorsCount,
+          pendingVisitors: pendingVisitorsCount
         });
 
         // Set recent lists
@@ -126,6 +134,15 @@ export default function Dashboard() {
           <h2 className="text-2xl font-bold text-slate-900">Dashboard Overview</h2>
           <p className="text-slate-500">Welcome back! Here's what's happening today.</p>
         </div>
+        {stats.pendingVisitors > 0 && auth.role === 'resident' && (
+          <button 
+            onClick={() => navigate('/visitors')}
+            className="flex items-center gap-2 bg-rose-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg animate-bounce hover:bg-rose-600 transition-colors"
+          >
+            <ShieldAlert className="w-5 h-5" />
+            {stats.pendingVisitors} Visitor{stats.pendingVisitors > 1 ? 's' : ''} Waiting for Approval!
+          </button>
+        )}
         {auth.role === 'admin' && (
           <div className="flex gap-3">
             <button 

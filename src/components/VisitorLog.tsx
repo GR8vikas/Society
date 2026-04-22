@@ -84,7 +84,19 @@ export default function VisitorLog() {
   const handleCheckout = async (id: string) => {
     try {
       await updateDoc(doc(db, 'visitors', id), {
-        exitTime: new Date().toISOString()
+        exitTime: new Date().toISOString(),
+        status: 'left'
+      });
+      fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleApproval = async (id: string, newStatus: 'approved' | 'rejected') => {
+    try {
+      await updateDoc(doc(db, 'visitors', id), {
+        status: newStatus
       });
       fetchData();
     } catch (e) {
@@ -169,6 +181,15 @@ export default function VisitorLog() {
                     <td className="px-6 py-4">
                       {v.exitTime ? (
                         <p className="text-slate-500 font-medium">{format(new Date(v.exitTime), 'p, MMM dd')}</p>
+                      ) : v.status === 'rejected' ? (
+                        <span className="text-rose-600 font-bold flex items-center gap-1">
+                          <X className="w-4 h-4" /> Entry Denied
+                        </span>
+                      ) : v.status === 'pending' ? (
+                        <span className="text-amber-600 font-bold flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div>
+                          Needs Approval
+                        </span>
                       ) : (
                         <span className="text-emerald-600 font-bold flex items-center gap-1">
                           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -177,7 +198,23 @@ export default function VisitorLog() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {!v.exitTime && auth.role === 'admin' && (
+                      {v.status === 'pending' && auth.role === 'resident' && (
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => v.id && handleApproval(v.id, 'rejected')}
+                            className="px-3 py-1.5 bg-rose-50 text-rose-700 text-xs font-bold rounded-lg hover:bg-rose-100 transition-colors"
+                          >
+                            Deny
+                          </button>
+                          <button 
+                            onClick={() => v.id && handleApproval(v.id, 'approved')}
+                            className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-bold rounded-lg hover:bg-emerald-600 transition-colors"
+                          >
+                            Approve
+                          </button>
+                        </div>
+                      )}
+                      {!v.exitTime && (!v.status || v.status === 'approved') && auth.role === 'admin' && (
                         <button 
                           onClick={() => v.id && handleCheckout(v.id)}
                           className="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-1.5 ml-auto"
@@ -213,7 +250,11 @@ export default function VisitorLog() {
             <form onSubmit={async (e) => {
               e.preventDefault();
               try {
-                await addDoc(collection(db, 'visitors'), formData);
+                const newVisitor = {
+                  ...formData,
+                  status: 'pending' // Initial state requires resident approval
+                };
+                await addDoc(collection(db, 'visitors'), newVisitor);
                 setIsModalOpen(false);
                 fetchData();
               } catch (e) {

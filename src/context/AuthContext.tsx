@@ -43,7 +43,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         // Quick check for admin based on email
         // If you define admin accounts via a specific domain or 'admin' prefix:
-        if (user.email && (user.email.startsWith('admin') || user.email.includes('unitysquare.com'))) {
+        if (user.email && (
+            user.email.startsWith('admin') || 
+            user.email.includes('unitysquare.com') ||
+            user.email === 'vikaspat371@gmail.com'
+        )) {
           if (isMounted) {
             setAuthState({ role: 'admin', residentName: 'Admin', flatName: 'Management', userId: user.uid });
             setLoading(false);

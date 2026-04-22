@@ -9,6 +9,7 @@ export default function Login() {
   const { forceRefresh } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [view, setView] = useState<'selection' | 'admin_login' | 'resident_login' | 'resident_register'>('selection');
+  const [errorInfo, setErrorInfo] = useState<string | null>(null);
 
   // Unified login state
   const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -26,24 +27,45 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent, type: 'admin' | 'resident') => {
     e.preventDefault();
-    if (!loginData.email || !loginData.password) return alert("Please fill all fields");
+    setErrorInfo(null);
+    if (!loginData.email || !loginData.password) {
+      setErrorInfo("Please fill all fields");
+      return;
+    }
     
     setIsSubmitting(true);
     try {
       await signInWithEmailAndPassword(auth, loginData.email, loginData.password);
       // Let AuthContext handle resolution!
     } catch (error: any) {
-      console.error(error);
+      console.error("Login attempt failed:", error);
       
+      const safeEmail = loginData.email.toLowerCase().trim();
+      const isAdminEmail = safeEmail.startsWith('admin') || 
+                           safeEmail.includes('unitysquare.com') || 
+                           safeEmail === 'vikaspat371@gmail.com';
+
       // Auto-create dummy admin to save prototype setups
-      if (type === 'admin' && loginData.email.includes('admin') && error.code === 'auth/invalid-credential') {
+      if (type === 'admin' && isAdminEmail) {
         try {
+          // If login failed for an admin email, try creating it.
           await createUserWithEmailAndPassword(auth, loginData.email, loginData.password);
-        } catch (e2) {
-          alert('Invalid credentials.');
+          return; // Success!
+        } catch (e2: any) {
+          // If creation fails because it exists, the password was just wrong.
+          if (e2.code === 'auth/email-already-in-use') {
+            setErrorInfo('Incorrect password for this Admin account.');
+          } else {
+            setErrorInfo('Setup error: Please check your password length (min 6 characters).');
+          }
         }
       } else {
-        alert("Invalid email or password!");
+        // Resident or non-admin failure
+        if (type === 'resident') {
+          setErrorInfo("Incorrect Email or Password. If you are new, please Register your flat.");
+        } else {
+          setErrorInfo("Admin login denied: Incorrect Email or Password.");
+        }
       }
     } finally {
       setIsSubmitting(false);
@@ -52,8 +74,11 @@ export default function Login() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!regData.name || !regData.flatNo || !regData.contact || !regData.email || !regData.password) 
-      return alert("Please fill all fields");
+    setErrorInfo(null);
+    if (!regData.name || !regData.flatNo || !regData.contact || !regData.email || !regData.password) {
+      setErrorInfo("Please fill all fields");
+      return;
+    }
     
     setIsSubmitting(true);
     try {
@@ -86,7 +111,13 @@ export default function Login() {
       
     } catch (error: any) {
       console.error("Registration failed", error);
-      alert(error.message || "Registration Failed.");
+      if (error.code === 'auth/email-already-in-use') {
+        setErrorInfo("This email is already registered. Please go back and login.");
+      } else if (error.code === 'auth/weak-password') {
+        setErrorInfo("Password is too weak. Please use at least 6 characters.");
+      } else {
+        setErrorInfo("Registration Failed. Please check your details and try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -155,7 +186,7 @@ export default function Login() {
           {/* ADMIN LOGIN */}
           {view === 'admin_login' && (
             <div className="space-y-6 flex flex-col h-full">
-              <button onClick={() => setView('selection')} className="text-sm font-bold text-theme-slate uppercase tracking-wider hover:text-navy flex items-center gap-1 w-fit absolute top-6 left-6">
+              <button onClick={() => { setView('selection'); setErrorInfo(null); }} className="text-sm font-bold text-theme-slate uppercase tracking-wider hover:text-navy flex items-center gap-1 w-fit absolute top-6 left-6">
                 ← Back
               </button>
 
@@ -171,7 +202,7 @@ export default function Login() {
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
                       <input 
-                        type="email" required value={loginData.email} onChange={e => setLoginData({...loginData, email: e.target.value})}
+                        type="email" required value={loginData.email} onChange={e => { setLoginData({...loginData, email: e.target.value}); setErrorInfo(null); }}
                         className="w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg text-sm focus:border-navy focus:ring-1 focus:ring-navy outline-none" 
                         placeholder="admin@unitysquare.com"
                       />
@@ -182,12 +213,18 @@ export default function Login() {
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
                       <input 
-                        type="password" required value={loginData.password} onChange={e => setLoginData({...loginData, password: e.target.value})}
+                        type="password" required value={loginData.password} onChange={e => { setLoginData({...loginData, password: e.target.value}); setErrorInfo(null); }}
                         className="w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg text-sm focus:border-navy focus:ring-1 focus:ring-navy outline-none" 
                         placeholder="••••••••"
                       />
                     </div>
                   </div>
+
+                  {errorInfo && (
+                    <p className="text-red-500 text-xs font-bold mt-1 text-center bg-red-50 p-2 rounded-lg border border-red-100">
+                      {errorInfo}
+                    </p>
+                  )}
 
                   <button 
                     disabled={isSubmitting} type="submit"
@@ -204,7 +241,7 @@ export default function Login() {
           {/* RESIDENT LOGIN */}
           {view === 'resident_login' && (
             <div className="space-y-6 flex flex-col h-full">
-              <button onClick={() => setView('selection')} className="text-sm font-bold text-theme-slate uppercase tracking-wider hover:text-navy flex items-center gap-1 w-fit absolute top-6 left-6">
+              <button onClick={() => { setView('selection'); setErrorInfo(null); }} className="text-sm font-bold text-theme-slate uppercase tracking-wider hover:text-navy flex items-center gap-1 w-fit absolute top-6 left-6">
                 ← Back
               </button>
 
@@ -220,7 +257,7 @@ export default function Login() {
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
                       <input 
-                        type="email" required value={loginData.email} onChange={e => setLoginData({...loginData, email: e.target.value})}
+                        type="email" required value={loginData.email} onChange={e => { setLoginData({...loginData, email: e.target.value}); setErrorInfo(null); }}
                         className="w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg text-sm focus:border-amber focus:ring-1 focus:ring-amber outline-none" 
                         placeholder="you@email.com"
                       />
@@ -231,12 +268,18 @@ export default function Login() {
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
                       <input 
-                        type="password" required value={loginData.password} onChange={e => setLoginData({...loginData, password: e.target.value})}
+                        type="password" required value={loginData.password} onChange={e => { setLoginData({...loginData, password: e.target.value}); setErrorInfo(null); }}
                         className="w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg text-sm focus:border-amber focus:ring-1 focus:ring-amber outline-none" 
                         placeholder="••••••••"
                       />
                     </div>
                   </div>
+
+                  {errorInfo && (
+                    <p className="text-red-500 text-xs font-bold mt-1 text-center bg-red-50 p-2 rounded-lg border border-red-100">
+                      {errorInfo}
+                    </p>
+                  )}
 
                   <button 
                     disabled={isSubmitting} type="submit"
@@ -264,7 +307,7 @@ export default function Login() {
           {/* RESIDENT REGISTER */}
           {view === 'resident_register' && (
              <div className="space-y-6 flex flex-col h-full overflow-y-auto custom-scrollbar px-1 py-1">
-              <button onClick={() => setView('resident_login')} className="text-sm font-bold text-theme-slate uppercase tracking-wider hover:text-navy flex items-center gap-1 w-fit sticky top-0 bg-white z-10 pb-4">
+              <button onClick={() => { setView('resident_login'); setErrorInfo(null); }} className="text-sm font-bold text-theme-slate uppercase tracking-wider hover:text-navy flex items-center gap-1 w-fit sticky top-0 bg-white z-10 pb-4">
                 ← Back
               </button>
 
@@ -331,7 +374,7 @@ export default function Login() {
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-navy uppercase tracking-wider">Contact Number</label>
                       <input 
-                        required type="tel" value={regData.contact} onChange={e => setRegData({...regData, contact: e.target.value})}
+                        required type="tel" value={regData.contact} onChange={e => { setRegData({...regData, contact: e.target.value}); setErrorInfo(null); }}
                         className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:border-amber focus:ring-1 focus:ring-amber outline-none" 
                         placeholder="+91..."
                       />
@@ -349,6 +392,12 @@ export default function Login() {
                       </select>
                     </div>
                   </div>
+
+                  {errorInfo && (
+                    <p className="text-red-500 text-xs font-bold mt-1 text-center bg-red-50 p-2 rounded-lg border border-red-100">
+                      {errorInfo}
+                    </p>
+                  )}
 
                   <button 
                     disabled={isSubmitting} type="submit"
